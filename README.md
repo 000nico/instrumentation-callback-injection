@@ -1,0 +1,2 @@
+# process-instrumentation-callback-information-injection
+Inject with _PROCESS_INSTRUMENTATION_CALLBACK_INFORMATION using NtSetInformationProcess
