@@ -69,6 +69,6 @@ PICII::exit(handle, true);
 
 ## Disclaimer 🛡️
 
-Wrapper by https://github.com/OtterHacker
-https://www.riskinsight-wavestone.com/en/2023/10/process-injection-using-ntsetinformationprocess/
-This project is for **security research and EDR/antivirus development only**. Use it in controlled environments. 
+- Wrapper by https://github.com/OtterHacker
+- https://www.riskinsight-wavestone.com/en/2023/10/process-injection-using-ntsetinformationprocess/
+- This project is for **security research and EDR/antivirus development only**. Use it in controlled environments. 
