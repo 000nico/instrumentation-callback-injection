@@ -39,7 +39,6 @@ The wrapper address is registered as the Nirvana callback. It calls the payload 
 PICII::inject(HANDLE handle, size_t size, unsigned char* payload, unsigned int length, bool debug)
 ```
 
-| Parameter | Description |
 ## Usage 🚀
 ```cpp
 PICII::inject(
