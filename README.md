@@ -36,11 +36,6 @@ The wrapper address is registered as the Nirvana callback. It calls the payload 
 
 ## Usage 🚀
 ```cpp
-PICII::inject(HANDLE handle, size_t size, unsigned char* payload, unsigned int length, bool debug)
-```
-
-## Usage 🚀
-```cpp
 PICII::inject(
     HANDLE handle,
     size_t size,
@@ -101,6 +96,7 @@ PICII::exit(handle, true);
 - Must run as **administrator** (elevated)
 - `SeDebugPrivilege` is required to hook remote processes
 - Target process must be **x64**
+- Its recommendable to set your payload as ```vextern "C" oid payload()```
 
 ---
 
